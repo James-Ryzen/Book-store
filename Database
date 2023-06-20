@@ -1,0 +1,124 @@
+<?php
+// Database connection configuration
+$host = 'localhost';
+$username = 'your_username';
+$password = 'your_password';
+$database = 'your_database';
+
+// Create a new database connection
+$connection = mysqli_connect($host, $username, $password, $database);
+if (!$connection) {
+    die('Database connection error: ' . mysqli_connect_error());
+}
+
+// Function to sanitize input data
+function sanitize($data) {
+    global $connection;
+    return mysqli_real_escape_string($connection, $data);
+}
+
+// Create a new book
+function createBook($title, $author, $price) {
+    global $connection;
+    $title = sanitize($title);
+    $author = sanitize($author);
+    $price = floatval($price);
+
+    $query = "INSERT INTO books (title, author, price) VALUES ('$title', '$author', $price)";
+    $result = mysqli_query($connection, $query);
+
+    return $result ? true : false;
+}
+
+// Get all books
+function getAllBooks() {
+    global $connection;
+
+    $query = "SELECT * FROM books";
+    $result = mysqli_query($connection, $query);
+
+    $books = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $books[] = $row;
+    }
+
+    return $books;
+}
+
+// Update a book
+function updateBook($id, $title, $author, $price) {
+    global $connection;
+    $id = intval($id);
+    $title = sanitize($title);
+    $author = sanitize($author);
+    $price = floatval($price);
+
+    $query = "UPDATE books SET title='$title', author='$author', price=$price WHERE id=$id";
+    $result = mysqli_query($connection, $query);
+
+    return $result ? true : false;
+}
+
+// Delete a book
+function deleteBook($id) {
+    global $connection;
+    $id = intval($id);
+
+    $query = "DELETE FROM books WHERE id=$id";
+    $result = mysqli_query($connection, $query);
+
+    return $result ? true : false;
+}
+
+// Close the database connection
+function closeConnection() {
+    global $connection;
+    mysqli_close($connection);
+}
+?>
+<?php
+// Include the database functions script
+require_once 'database.php';
+
+// Check if the form is submitted
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Retrieve the form data
+    $title = $_POST['title'];
+    $author = $_POST['author'];
+    $price = $_POST['price'];
+
+    // Validate the form data (add your own validation rules as needed)
+    if (empty($title) || empty($author) || empty($price)) {
+        $error = 'Please fill in all fields.';
+    } else {
+        // Create the book
+        if (createBook($title, $author, $price)) {
+            $success = 'Book created successfully.';
+        } else {
+            $error = 'Failed to create book.';
+        }
+    }
+}
+?>
+
+<!-- HTML form to add a new book -->
+<form method="post" action="">
+    <label for="title">Title:</label>
+    <input type="text" name="title" id="title" required>
+    <br>
+    <label for="author">Author:</label>
+    <input type="text" name="author" id="author" required>
+    <br>
+    <label for="price">Price:</label>
+    <input type="number" step="0.01" name="price" id="price" required>
+    <br>
+    <input type="submit" value="Add Book">
+</form>
+
+<!-- Display success or error messages, if any -->
+<?php if (isset($success)): ?>
+    <p><?php echo $success; ?></p>
+<?php elseif (isset($error)): ?>
+    <p><?php echo $error; ?></p>
+<?php endif; ?>
+
